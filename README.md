@@ -34,3 +34,14 @@ You can open up `localhost:4000` and test a query like this to see data returned
   }
 }
 ```
+
+You can test a subscription with this in the playground:
+
+```graphql
+subscription {
+  counter {
+    count
+    countStr
+  }
+}
+```

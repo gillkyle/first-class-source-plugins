@@ -13,4 +13,14 @@ type Post {
   id: ID!
   url: String!
   description: String!
+  imgUrl: String!
+}
+
+type Counter {
+  count: Int!
+  countStr: String
+}
+
+type Subscription {
+  counter: Counter!
 }
