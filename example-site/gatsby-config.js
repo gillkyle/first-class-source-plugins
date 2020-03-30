@@ -10,8 +10,9 @@ module.exports = {
     {
       resolve: `source-plugin`,
       options: {
-        spaceId: "1234",
+        spaceId: "123",
         preview: true,
+        cacheResponse: true,
       },
     },
     // required to generate optimized images
