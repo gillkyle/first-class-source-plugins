@@ -1,6 +1,7 @@
 type Query {
   info: String!
   posts: [Post!]!
+  authors: [Author!]!
 }
 
 type Mutation {
@@ -14,6 +15,11 @@ type Post {
   url: String!
   description: String!
   imgUrl: String!
+}
+
+type Author {
+  id: ID!
+  name: String!
 }
 
 type Counter {

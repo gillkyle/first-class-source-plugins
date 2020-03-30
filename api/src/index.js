@@ -23,6 +23,17 @@ const posts = [
   },
 ]
 
+const authors = [
+  {
+    id: uniqid(),
+    name: "Jay Gatsby",
+  },
+  {
+    id: uniqid(),
+    name: "Daisy Buchanan",
+  },
+]
+
 const findPostIdxById = id => {
   let postIdx = null
 
@@ -40,6 +51,7 @@ const resolvers = {
   Query: {
     info: () => "A simple GraphQL server example with in-memory data.",
     posts: () => posts,
+    authors: () => authors,
   },
 
   Mutation: {
@@ -86,6 +98,11 @@ const resolvers = {
     id: root => root.id,
     url: root => root.url,
     description: root => root.description,
+  },
+
+  Author: {
+    id: root => root.id,
+    name: root => root.name,
   },
 
   Counter: {
