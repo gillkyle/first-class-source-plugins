@@ -19,9 +19,7 @@ exports.sourceNodes = async function sourceNodes(
   console.log(`Space ID: ${pluginOptions.spaceId}`)
 
   // touch nodes to ensure they aren't garbage collected
-  const n = getNodesByType(NODE_TYPE)
-  n.forEach(node => touchNode({ nodeId: node.id }))
-  console.log(n)
+  getNodesByType(NODE_TYPE).forEach(node => touchNode({ nodeId: node.id }))
 
   // listen for updates using a websocket and subscriptions from the API
   if (pluginOptions.preview) {
@@ -79,13 +77,13 @@ exports.sourceNodes = async function sourceNodes(
   return
 }
 
-// transfrom remote file nodes using Gatsby sharp plugins
 exports.onCreateNode = async ({
   actions: { createNode, createParentChildLink },
   getCache,
   createNodeId,
   node,
 }) => {
+  // transfrom remote file nodes using Gatsby sharp plugins
   // because onCreateNode is called for all nodes, verify that you are only running this code on nodes created by your plugin
   if (node.internal.type === `YourSourceItem`) {
     // create a FileNode in Gatsby that gatsby-transformer-sharp will create optimized images for
