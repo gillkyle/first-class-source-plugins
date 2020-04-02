@@ -2,35 +2,39 @@ require("dotenv").config()
 const { GraphQLServer, PubSub } = require("graphql-yoga")
 const uniqid = require("uniqid")
 
-const posts = [
-  {
-    id: uniqid(),
-    url: "https://graphql.org",
-    description: "The official GraphQL website.",
-    imgUrl: "https://images.unsplash.com/photo-1534432586043-ead5b99229fb",
-  },
-  {
-    id: uniqid(),
-    url: "https://www.howtographql.com",
-    description: "Awesome GraphQL tutorial.",
-    imgUrl: "https://images.unsplash.com/photo-1530041539828-114de669390e",
-  },
-  {
-    id: uniqid(),
-    url: "https://github.com/graphcool/graphql-yoga",
-    description: "Fully-featured GraphQL server for JavaScript",
-    imgUrl: "https://images.unsplash.com/photo-1495121553079-4c61bcce1894",
-  },
-]
-
 const authors = [
   {
-    id: uniqid(),
+    // TODO maybe remove the unique ID here so I can show the createNodeId helper being used in schemaCustomization
+    id: 1,
     name: "Jay Gatsby",
   },
   {
-    id: uniqid(),
+    id: 2,
     name: "Daisy Buchanan",
+  },
+]
+
+const posts = [
+  {
+    id: uniqid(),
+    slug: "hello-world",
+    description: "Our first post on our site.",
+    imgUrl: "https://images.unsplash.com/photo-1534432586043-ead5b99229fb",
+    authorId: 1,
+  },
+  {
+    id: uniqid(),
+    slug: "building-our-company-culture",
+    description: "Our vision for a welcoming company.",
+    imgUrl: "https://images.unsplash.com/photo-1530041539828-114de669390e",
+    authorId: 1,
+  },
+  {
+    id: uniqid(),
+    slug: "redesigning-our-logo",
+    description: "What went into the new logo.",
+    imgUrl: "https://images.unsplash.com/photo-1495121553079-4c61bcce1894",
+    authorId: 2,
   },
 ]
 
@@ -55,10 +59,10 @@ const resolvers = {
   },
 
   Mutation: {
-    createPost: (root, { url, description }) => {
+    createPost: (root, { slug, description }) => {
       const post = {
         id: uniqid(),
-        url,
+        slug,
         description,
       }
 
@@ -67,14 +71,14 @@ const resolvers = {
       return post
     },
 
-    updatePost: (root, { id, url, description }) => {
+    updatePost: (root, { id, slug, description }) => {
       const postIdx = findPostIdxById(id)
 
       if (postIdx === null) {
         return null
       }
 
-      posts[postIdx] = { ...posts[postIdx], url, description }
+      posts[postIdx] = { ...posts[postIdx], slug, description }
 
       return posts[postIdx]
     },
@@ -96,8 +100,9 @@ const resolvers = {
 
   Post: {
     id: root => root.id,
-    url: root => root.url,
+    slug: root => root.slug,
     description: root => root.description,
+    author: root => authors.find(author => author.id === root.authorId),
   },
 
   Author: {
@@ -116,10 +121,10 @@ const resolvers = {
           .toString(36)
           .substring(2, 15) // random channel name
         let count = 0
-        setInterval(
-          () => pubsub.publish(channel, { counter: { count: count++ } }),
-          2000
-        )
+        setInterval(() => {
+          console.log("sending count: " + count)
+          pubsub.publish(channel, { counter: { count: count++ } })
+        }, 2000)
         return pubsub.asyncIterator(channel)
       },
     },

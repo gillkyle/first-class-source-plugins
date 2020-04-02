@@ -2,18 +2,81 @@ const axios = require("axios")
 const WebSocket = require("ws")
 const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
 
-const NODE_TYPE = `YourSourceItem`
+const POST_NODE_TYPE = `Post`
+const AUTHOR_NODE_TYPE = `Author`
 let ws
+
+// helper function for creating nodes
+const createNodeFromData = (item, nodeType, helpers) => {
+  const nodeMetadata = {
+    // you can use createNodeId to link in a custom resolver with schemacustomization to regenerate the same and link correctly
+    id: helpers.createNodeId(`${nodeType}-${item.id}`),
+    parent: null, // this is used if nodes are derived from other nodes, a little different than a foreign key relationship, more fitting for a transformer plugin that is changing the node
+    children: [],
+    // author___NODE:
+    //   nodeType === `Post`
+    //     ? helpers.createNodeId(`${nodeType}-${item.author.id}`)
+    //     : undefined,
+    internal: {
+      type: nodeType,
+      content: JSON.stringify(item),
+      contentDigest: helpers.createContentDigest(item),
+    },
+  }
+
+  const node = Object.assign({}, item, nodeMetadata)
+  console.log(node)
+  helpers.createNode(node)
+  return node
+}
+
+/**
+ * ============================================================================
+ * Verify plugin loads
+ * ============================================================================
+ */
 
 // sanity check to verify the plugin is running
 exports.onPreInit = () => console.log("Loaded source-plugin")
 
-// source nodes from the demo API so Gatsby can query them
+/**
+ * ============================================================================
+ * Link nodes together with a customized GraphQL Schema
+ * ============================================================================
+ */
+
+exports.createSchemaCustomization = ({ actions, schema }) => {
+  const { createTypes } = actions
+  createTypes(`
+    type Post implements Node {
+      id: ID!
+      slug: String!
+      description: String!
+      imgUrl: String!
+      author: Author @link(by: "name")
+    }
+
+    type Author implements Node {
+      id: ID!
+      name: String!
+    }`)
+}
+
+/**
+ * ============================================================================
+ * Source and cache nodes from the API
+ * ============================================================================
+ */
+
 exports.sourceNodes = async function sourceNodes(
   { actions, cache, createContentDigest, createNodeId, getNodesByType },
   pluginOptions
 ) {
   const { createNode, touchNode } = actions
+  const helpers = Object.assign({}, actions, {
+    createContentDigest,
+    createNodeId,
+  })
 
   // you can access plugin options here if need be
   console.log(`Space ID: ${pluginOptions.spaceId}`)
@@ -23,7 +86,10 @@ exports.sourceNodes = async function sourceNodes(
   console.log(await cache.get(`hello`))
 
   // touch nodes to ensure they aren't garbage collected
-  getNodesByType(NODE_TYPE).forEach(node => touchNode({ nodeId: node.id }))
+  getNodesByType(POST_NODE_TYPE).forEach(node => touchNode({ nodeId: node.id }))
+  getNodesByType(AUTHOR_NODE_TYPE).forEach(node =>
+    touchNode({ nodeId: node.id })
+  )
 
   // listen for updates using a websocket and subscriptions from the API
   if (pluginOptions.preview) {
@@ -33,7 +99,7 @@ exports.sourceNodes = async function sourceNodes(
     }
 
     ws.on("open", function open() {
-      ws.send("something")
+      ws.send("Opened connection with gatsby-node")
       console.log("something") // logs to console
     })
 
@@ -41,6 +107,10 @@ exports.sourceNodes = async function sourceNodes(
       console.log(data)
     })
   }
+
+  // TODO update query to fetch all or only stuff after lastupdatedat
+  // set lastUpdated in cache and use that to fetch only new data
+  // is that important for inc builds: long running vs shutoff?
 
   // store the response from the API in the cache
   const cacheKey = "your-source-data-key"
@@ -59,9 +129,17 @@ exports.sourceNodes = async function sourceNodes(
           query {
             posts {
               id
+              slug
               description
-              url
               imgUrl
+              author {
+                id
+                name
+              }
+            }
+            authors {
+              id
+              name
             }
           }
         `,
@@ -71,25 +149,22 @@ exports.sourceNodes = async function sourceNodes(
     sourceData = data
   }
 
-  // loop through posts returned from the api and create Gatsby nodes for them
-  sourceData.posts.forEach(post => {
-    const nodeMetadata = {
-      id: createNodeId(`your-source-${post.id}`),
-      parent: null,
-      children: [],
-      internal: {
-        type: NODE_TYPE,
-        content: JSON.stringify(post),
-        contentDigest: createContentDigest(post),
-      },
-    }
-
-    const node = Object.assign({}, post, nodeMetadata)
-    createNode(node)
-  })
+  // loop through data returned from the api and create Gatsby nodes for them
+  sourceData.posts.forEach(post =>
+    createNodeFromData(post, POST_NODE_TYPE, helpers)
+  )
+  sourceData.authors.forEach(author =>
+    createNodeFromData(author, AUTHOR_NODE_TYPE, helpers)
+  )
 
   return
 }
+
+/**
+ * ============================================================================
+ * Transform remote file nodes
+ * ============================================================================
+ */
 
 exports.onCreateNode = async ({
   actions: { createNode },
@@ -99,7 +174,7 @@ exports.onCreateNode = async ({
 }) => {
   // transfrom remote file nodes using Gatsby sharp plugins
   // because onCreateNode is called for all nodes, verify that you are only running this code on nodes created by your plugin
-  if (node.internal.type === NODE_TYPE) {
+  if (node.internal.type === POST_NODE_TYPE) {
     // create a FileNode in Gatsby that gatsby-transformer-sharp will create optimized images for
     const fileNode = await createRemoteFileNode({
       // the url of the remote image to generate a node for
@@ -112,7 +187,10 @@ exports.onCreateNode = async ({
 
     if (fileNode) {
       // add the field to create a connection between the image node and the new file node
-      node["remoteImageFile___NODE"] = fileNode.id
+      // this relies on Gatsby inferring the types, you can also use schemaCustomization
+      // if you aree familiar with GraphQL to explicitly type your types and link resources
+      // node.remoteImageFile___NODE = fileNode.id
+      node.remoteImage___NODE = fileNode.id
     }
   }
 }

@@ -12,7 +12,7 @@ module.exports = {
       options: {
         spaceId: "123",
         preview: true,
-        cacheResponse: true,
+        cacheResponse: false,
       },
     },
     // required to generate optimized images

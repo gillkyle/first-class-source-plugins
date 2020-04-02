@@ -12,9 +12,10 @@ type Mutation {
 
 type Post {
   id: ID!
-  url: String!
+  slug: String!
   description: String!
   imgUrl: String!
+  author: Author!
 }
 
 type Author {
