@@ -110,20 +110,14 @@ const resolvers = {
     name: root => root.name,
   },
 
-  Counter: {
-    countStr: counter => `Current count: ${counter.count}`,
-  },
-
   Subscription: {
-    counter: {
+    posts: {
       subscribe: (parent, args, { pubsub }) => {
         const channel = Math.random()
           .toString(36)
           .substring(2, 15) // random channel name
-        let count = 0
         setInterval(() => {
-          console.log("sending count: " + count)
-          pubsub.publish(channel, { counter: { count: count++ } })
+          pubsub.publish(channel, { posts })
         }, 2000)
         return pubsub.asyncIterator(channel)
       },

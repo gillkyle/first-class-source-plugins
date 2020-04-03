@@ -1,6 +1,60 @@
-const axios = require("axios")
-const WebSocket = require("ws")
 const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
+const WebSocket = require("ws")
+const { ApolloClient } = require("apollo-client")
+const { InMemoryCache } = require("apollo-cache-inmemory")
+const { split } = require("apollo-link")
+const { HttpLink } = require("apollo-link-http")
+const { WebSocketLink } = require("apollo-link-ws")
+const { getMainDefinition } = require("apollo-utilities")
+const fetch = require("node-fetch")
+const gql = require("graphql-tag")
+
+/**
+ * ============================================================================
+ * Create a GraphQL client to subscribe to data
+ * ============================================================================
+ */
+
+// Create an http link:
+const httpLink = new HttpLink({
+  uri: "http://localhost:4000",
+  fetch,
+})
+
+// Create a WebSocket link:
+const wsLink = new WebSocketLink({
+  uri: `ws://localhost:4000`,
+  options: {
+    reconnect: true,
+  },
+  webSocketImpl: WebSocket,
+})
+
+// using the ability to split links, you can send data to each link
+// depending on what kind of operation is being sent
+const link = split(
+  // split based on operation type
+  ({ query }) => {
+    const definition = getMainDefinition(query)
+    return (
+      definition.kind === "OperationDefinition" &&
+      definition.operation === "subscription"
+    )
+  },
+  wsLink,
+  httpLink
+)
+
+const client = new ApolloClient({
+  link,
+  cache: new InMemoryCache(),
+})
+
+/**
+ * ============================================================================
+ * Helper functions and constants
+ * ============================================================================
+ */
 
 const POST_NODE_TYPE = `Post`
 const AUTHOR_NODE_TYPE = `Author`
@@ -32,6 +86,7 @@ const createNodeFromData = (item, nodeType, helpers) => {
  */
 
 // sanity check to verify the plugin is running
+// should see message in console when running `gatsby develop` in example-site
 exports.onPreInit = () => console.log("Loaded source-plugin")
 
 /**
@@ -99,7 +154,20 @@ exports.sourceNodes = async function sourceNodes(
       console.log("something") // logs to console
     })
 
-    ws.on("message", function incoming(data) {
+    const subscription = await client.subscribe({
+      query: gql`
+        subscription {
+          posts {
+            id
+          }
+        }
+      `,
+    })
+    subscription.subscribe(next => {
+      console.log(next)
+    })
+
+    ws.on("message", data => {
       console.log(data)
     })
   }
@@ -115,31 +183,25 @@ exports.sourceNodes = async function sourceNodes(
   // fetch fresh data if nothiing is found in the cache or a plugin option says not to cache data
   if (!sourceData || !pluginOptions.cacheResponse) {
     console.log("Not using cache for source data, fetching fresh content")
-    const {
-      data: { data },
-    } = await axios({
-      method: `post`,
-      url: `http://localhost:4000`,
-      data: {
-        query: `
-          query {
-            posts {
-              id
-              slug
-              description
-              imgUrl
-              author {
-                id
-                name
-              }
-            }
-            authors {
+    const { data } = await client.query({
+      query: gql`
+        query {
+          posts {
+            id
+            slug
+            description
+            imgUrl
+            author {
               id
               name
             }
           }
-        `,
-      },
+          authors {
+            id
+            name
+          }
+        }
+      `,
     })
     await cache.set(cacheKey, data)
     sourceData = data

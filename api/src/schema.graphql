@@ -23,11 +23,6 @@ type Author {
   name: String!
 }
 
-type Counter {
-  count: Int!
-  countStr: String
-}
-
 type Subscription {
-  counter: Counter!
+  posts: [Post!]!
 }
