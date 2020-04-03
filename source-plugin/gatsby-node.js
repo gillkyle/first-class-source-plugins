@@ -144,16 +144,9 @@ exports.sourceNodes = async function sourceNodes(
 
   // listen for updates using a websocket and subscriptions from the API
   if (pluginOptions.preview) {
-    if (!ws) {
-      ws = new WebSocket(`ws://localhost:4000`)
-      console.log(`Subscribing to content updates at: ws://localhost:4000...`)
-    }
-
-    ws.on("open", function open() {
-      ws.send("Opened connection with gatsby-node")
-      console.log("something") // logs to console
-    })
-
+    console.log(
+      "Subscribing to updates on ws://localhost:4000 because plugin is in Preview mode..."
+    )
     const subscription = await client.subscribe({
       query: gql`
         subscription {
@@ -163,12 +156,9 @@ exports.sourceNodes = async function sourceNodes(
         }
       `,
     })
-    subscription.subscribe(next => {
-      console.log(next)
-    })
-
-    ws.on("message", data => {
+    subscription.subscribe(({ data }) => {
       console.log(data)
+      console.log(data.posts)
     })
   }
 

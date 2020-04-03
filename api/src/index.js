@@ -2,6 +2,10 @@ require("dotenv").config()
 const { GraphQLServer, PubSub } = require("graphql-yoga")
 const uniqid = require("uniqid")
 
+const CREATED = "created"
+const UPDATED = "updated"
+const DELETED = "deleted"
+
 const authors = [
   {
     // TODO maybe remove the unique ID here so I can show the createNodeId helper being used in schemaCustomization
@@ -38,19 +42,6 @@ const posts = [
   },
 ]
 
-const findPostIdxById = id => {
-  let postIdx = null
-
-  for (let idx = 0; idx < posts.length; idx += 1) {
-    if (posts[idx].id === id) {
-      postIdx = idx
-      break
-    }
-  }
-
-  return postIdx
-}
-
 const resolvers = {
   Query: {
     info: () => "A simple GraphQL server example with in-memory data.",
@@ -64,33 +55,38 @@ const resolvers = {
         id: uniqid(),
         slug,
         description,
+        imgUrl: "https://images.unsplash.com/photo-1534432586043-ead5b99229fb",
+        authorId: 1,
       }
 
       posts.push(post)
+      pubsub.publish(CREATED, { posts: [post] })
 
       return post
     },
 
-    updatePost: (root, { id, slug, description }) => {
-      const postIdx = findPostIdxById(id)
+    updatePost: (root, { id, description }) => {
+      const postIdx = posts.findIndex(p => id === p.id)
 
       if (postIdx === null) {
         return null
       }
 
-      posts[postIdx] = { ...posts[postIdx], slug, description }
+      posts[postIdx] = { ...posts[postIdx], description }
+      pubsub.publish(UPDATED, { posts: [posts[postIdx]] })
 
       return posts[postIdx]
     },
 
     deletePost: (root, { id }) => {
-      const postIdx = findPostIdxById(id)
+      const postIdx = posts.findIndex(p => id === p.id)
 
       if (postIdx === null) {
         return null
       }
 
       const post = posts[postIdx]
+      pubsub.publish(DELETED, { posts: [posts[postIdx]] })
 
       posts.splice(postIdx, 1)
 
@@ -113,13 +109,13 @@ const resolvers = {
   Subscription: {
     posts: {
       subscribe: (parent, args, { pubsub }) => {
-        const channel = Math.random()
-          .toString(36)
-          .substring(2, 15) // random channel name
-        setInterval(() => {
-          pubsub.publish(channel, { posts })
-        }, 2000)
-        return pubsub.asyncIterator(channel)
+        // const channel = Math.random()
+        //   .toString(36)
+        //   .substring(2, 15) // random channel name
+        // setInterval(() => {
+        //   pubsub.publish(channel, { posts })
+        // }, 2000)
+        return pubsub.asyncIterator([CREATED, UPDATED, DELETED])
       },
     },
   },
