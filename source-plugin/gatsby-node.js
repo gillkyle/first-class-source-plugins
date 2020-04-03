@@ -13,10 +13,6 @@ const createNodeFromData = (item, nodeType, helpers) => {
     id: helpers.createNodeId(`${nodeType}-${item.id}`),
     parent: null, // this is used if nodes are derived from other nodes, a little different than a foreign key relationship, more fitting for a transformer plugin that is changing the node
     children: [],
-    // author___NODE:
-    //   nodeType === `Post`
-    //     ? helpers.createNodeId(`${nodeType}-${item.author.id}`)
-    //     : undefined,
     internal: {
       type: nodeType,
       content: JSON.stringify(item),
@@ -25,7 +21,6 @@ const createNodeFromData = (item, nodeType, helpers) => {
   }
 
   const node = Object.assign({}, item, nodeMetadata)
-  console.log(node)
   helpers.createNode(node)
   return node
 }
@@ -53,7 +48,8 @@ exports.createSchemaCustomization = ({ actions, schema }) => {
       slug: String!
       description: String!
       imgUrl: String!
-      author: Author @link(by: "name")
+      remoteFile: File @link
+      author: Author @link(from: "author.name" by: "name")
     }
 
     type Author implements Node {
@@ -186,11 +182,11 @@ exports.onCreateNode = async ({
     })
 
     if (fileNode) {
-      // add the field to create a connection between the image node and the new file node
-      // this relies on Gatsby inferring the types, you can also use schemaCustomization
-      // if you aree familiar with GraphQL to explicitly type your types and link resources
-      // node.remoteImageFile___NODE = fileNode.id
-      node.remoteImage___NODE = fileNode.id
+      // used to add a field `remoteImage` to the Post node from the File node in the schemaCustomization API
+      node.remoteImage = fileNode.id
+
+      // inference can link these without schemaCustomization like this, but creates a less sturdy schema
+      // node.remoteImage___NODE = fileNode.id
     }
   }
 }
