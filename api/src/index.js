@@ -8,7 +8,6 @@ const DELETED = "deleted"
 
 const authors = [
   {
-    // TODO maybe remove the unique ID here so I can show the createNodeId helper being used in schemaCustomization
     id: 1,
     name: "Jay Gatsby",
   },
@@ -29,7 +28,7 @@ const posts = [
   },
   {
     id: uniqid(),
-    slug: "building-our-company-culture",
+    slug: "company-vision",
     description: "Our vision for a welcoming company.",
     imgUrl: "https://images.unsplash.com/photo-1530041539828-114de669390e",
     imgAlt: "Pug in a rainjacket",
@@ -64,7 +63,7 @@ const resolvers = {
       }
 
       posts.push(post)
-      pubsub.publish(CREATED, { posts: [post] })
+      pubsub.publish(CREATED, { posts: [{ status: CREATED, ...post }] })
 
       return post
     },
@@ -77,7 +76,9 @@ const resolvers = {
       }
 
       posts[postIdx] = { ...posts[postIdx], description }
-      pubsub.publish(UPDATED, { posts: [posts[postIdx]] })
+      pubsub.publish(UPDATED, {
+        posts: [{ status: UPDATED, ...posts[postIdx] }],
+      })
 
       return posts[postIdx]
     },
@@ -90,7 +91,9 @@ const resolvers = {
       }
 
       const post = posts[postIdx]
-      pubsub.publish(DELETED, { posts: [posts[postIdx]] })
+      pubsub.publish(DELETED, {
+        posts: [{ status: DELETED, ...posts[postIdx] }],
+      })
 
       posts.splice(postIdx, 1)
 
@@ -113,12 +116,6 @@ const resolvers = {
   Subscription: {
     posts: {
       subscribe: (parent, args, { pubsub }) => {
-        // const channel = Math.random()
-        //   .toString(36)
-        //   .substring(2, 15) // random channel name
-        // setInterval(() => {
-        //   pubsub.publish(channel, { posts })
-        // }, 2000)
         return pubsub.asyncIterator([CREATED, UPDATED, DELETED])
       },
     },

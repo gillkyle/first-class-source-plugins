@@ -14,18 +14,23 @@ export default ({ data }) => (
         display: `grid`,
         gridTemplateColumns: `repeat( auto-fit, minmax(250px, 1fr) )`,
         gridGap: 16,
+        justifyContent: "space-between",
       }}
     >
       {data.allPost.nodes.map(post => (
         <div
           style={{
+            display: `flex`,
+            flexDirection: `column`,
+            justifyContent: `space-between`,
             padding: 16,
             border: `1px solid #ccc`,
             borderRadius: 8,
           }}
         >
           <h2>{post.slug}</h2>
-          <span>{post.author.name}</span>
+          <span>By: {post.author.name}</span>
+          <p>{post.description}</p>
           <Img
             fluid={post.remoteImage.childImageSharp.fluid}
             alt={post.imgAlt}

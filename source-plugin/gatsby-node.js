@@ -120,10 +120,17 @@ exports.createSchemaCustomization = ({ actions, schema }) => {
  */
 
 exports.sourceNodes = async function sourceNodes(
-  { actions, cache, createContentDigest, createNodeId, getNodesByType },
+  {
+    actions,
+    cache,
+    createContentDigest,
+    createNodeId,
+    getNodesByType,
+    getNode,
+  },
   pluginOptions
 ) {
-  const { createNode, touchNode } = actions
+  const { createNode, touchNode, deleteNode } = actions
   const helpers = Object.assign({}, actions, {
     createContentDigest,
     createNodeId,
@@ -160,12 +167,33 @@ exports.sourceNodes = async function sourceNodes(
               id
               name
             }
+            status
           }
         }
       `,
     })
     subscription.subscribe(({ data }) => {
+      console.log(`Subscription received:`)
       console.log(data.posts)
+      data.posts.forEach(post => {
+        const nodeId = createNodeId(`${POST_NODE_TYPE}-${post.id}`)
+        switch (post.status) {
+          case "deleted":
+            deleteNode({
+              node: getNode(nodeId),
+            })
+            break
+          case "created":
+          case "updated":
+          default:
+            /*
+             * Created and updated can be handled by the same code path
+             * The post's id is presumed to stay constant (or can be inferred)
+             */
+            createNodeFromData(post, POST_NODE_TYPE, helpers)
+            break
+        }
+      })
     })
   }
 
