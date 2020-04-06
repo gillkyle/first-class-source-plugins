@@ -11,7 +11,7 @@ const gql = require("graphql-tag")
 
 /**
  * ============================================================================
- * Create a GraphQL client to subscribe to data
+ * Create a GraphQL client to subscribe to live data changes
  * ============================================================================
  */
 
@@ -30,7 +30,7 @@ const wsLink = new WebSocketLink({
   webSocketImpl: WebSocket,
 })
 
-// using the ability to split links, you can send data to each link
+// using the ability to split links, you can send data to each link/url
 // depending on what kind of operation is being sent
 const link = split(
   // split based on operation type
@@ -62,7 +62,6 @@ const AUTHOR_NODE_TYPE = `Author`
 // helper function for creating nodes
 const createNodeFromData = (item, nodeType, helpers) => {
   const nodeMetadata = {
-    // you can use createNodeId to link in a custom resolver with schemacustomization to regenerate the same and link correctly
     id: helpers.createNodeId(`${nodeType}-${item.id}`),
     parent: null, // this is used if nodes are derived from other nodes, a little different than a foreign key relationship, more fitting for a transformer plugin that is changing the node
     children: [],
@@ -84,7 +83,6 @@ const createNodeFromData = (item, nodeType, helpers) => {
  * ============================================================================
  */
 
-// sanity check to verify the plugin is running
 // should see message in console when running `gatsby develop` in example-site
 exports.onPreInit = () => console.log("Loaded source-plugin")
 
@@ -94,7 +92,7 @@ exports.onPreInit = () => console.log("Loaded source-plugin")
  * ============================================================================
  */
 
-exports.createSchemaCustomization = ({ actions, schema }) => {
+exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions
   createTypes(`
     type Post implements Node {
@@ -103,7 +101,9 @@ exports.createSchemaCustomization = ({ actions, schema }) => {
       description: String!
       imgUrl: String!
       imgAlt: String!
+      # create foreign key relationships between Post and File nodes for optimized images
       remoteImage: File @link
+      # create foreign key relationships between Post and Author nodes
       author: Author @link(from: "author.name" by: "name")
     }
 
@@ -149,7 +149,7 @@ exports.sourceNodes = async function sourceNodes(
     touchNode({ nodeId: node.id })
   )
 
-  // listen for updates using a websocket and subscriptions from the API
+  // listen for updates using subscriptions from the API
   if (pluginOptions.preview) {
     console.log(
       "Subscribing to updates on ws://localhost:4000 (plugin is in Preview mode)"
