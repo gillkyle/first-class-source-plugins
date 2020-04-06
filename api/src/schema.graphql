@@ -15,6 +15,7 @@ type Post {
   slug: String!
   description: String!
   imgUrl: String!
+  imgAlt: String!
   author: Author!
 }
 

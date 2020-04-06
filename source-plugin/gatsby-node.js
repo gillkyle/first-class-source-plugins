@@ -58,7 +58,6 @@ const client = new ApolloClient({
 
 const POST_NODE_TYPE = `Post`
 const AUTHOR_NODE_TYPE = `Author`
-let ws
 
 // helper function for creating nodes
 const createNodeFromData = (item, nodeType, helpers) => {
@@ -103,7 +102,8 @@ exports.createSchemaCustomization = ({ actions, schema }) => {
       slug: String!
       description: String!
       imgUrl: String!
-      remoteFile: File @link
+      imgAlt: String!
+      remoteImage: File @link
       author: Author @link(from: "author.name" by: "name")
     }
 
@@ -145,19 +145,26 @@ exports.sourceNodes = async function sourceNodes(
   // listen for updates using a websocket and subscriptions from the API
   if (pluginOptions.preview) {
     console.log(
-      "Subscribing to updates on ws://localhost:4000 because plugin is in Preview mode..."
+      "Subscribing to updates on ws://localhost:4000 (plugin is in Preview mode)"
     )
     const subscription = await client.subscribe({
       query: gql`
         subscription {
           posts {
             id
+            slug
+            description
+            imgUrl
+            imgAlt
+            author {
+              id
+              name
+            }
           }
         }
       `,
     })
     subscription.subscribe(({ data }) => {
-      console.log(data)
       console.log(data.posts)
     })
   }
@@ -181,6 +188,7 @@ exports.sourceNodes = async function sourceNodes(
             slug
             description
             imgUrl
+            imgAlt
             author {
               id
               name

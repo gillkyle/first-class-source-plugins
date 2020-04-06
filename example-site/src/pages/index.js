@@ -3,25 +3,62 @@ import { graphql } from "gatsby"
 import Img from "gatsby-image"
 
 export default ({ data }) => (
-  <div>
-    Hello world!
-    <div>
-      {data.images.nodes.map(node => (
-        <Img fluid={node.childImageSharp.fluid} />
+  <div
+    style={{
+      padding: 32,
+    }}
+  >
+    <h1>Posts</h1>
+    <section
+      style={{
+        display: `grid`,
+        gridTemplateColumns: `repeat( auto-fit, minmax(250px, 1fr) )`,
+        gridGap: 16,
+      }}
+    >
+      {data.allPost.nodes.map(post => (
+        <div
+          style={{
+            padding: 16,
+            border: `1px solid #ccc`,
+            borderRadius: 8,
+          }}
+        >
+          <h2>{post.slug}</h2>
+          <span>{post.author.name}</span>
+          <Img
+            fluid={post.remoteImage.childImageSharp.fluid}
+            alt={post.imgAlt}
+            style={{
+              maxHeight: 300,
+            }}
+          />
+        </div>
       ))}
-    </div>
+    </section>
   </div>
 )
 
 export const query = graphql`
   {
-    images: allFile(filter: { extension: { regex: "/(jpg)/" } }) {
+    allPost {
       nodes {
         id
-        childImageSharp {
+        slug
+        description
+        imgAlt
+        author {
           id
-          fluid {
-            ...GatsbyImageSharpFluid
+          name
+        }
+        slug
+        remoteImage {
+          id
+          childImageSharp {
+            id
+            fluid {
+              ...GatsbyImageSharpFluid
+            }
           }
         }
       }

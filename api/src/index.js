@@ -24,6 +24,7 @@ const posts = [
     slug: "hello-world",
     description: "Our first post on our site.",
     imgUrl: "https://images.unsplash.com/photo-1534432586043-ead5b99229fb",
+    imgAlt: "Pug in a sweater",
     authorId: 1,
   },
   {
@@ -31,13 +32,15 @@ const posts = [
     slug: "building-our-company-culture",
     description: "Our vision for a welcoming company.",
     imgUrl: "https://images.unsplash.com/photo-1530041539828-114de669390e",
+    imgAlt: "Pug in a rainjacket",
     authorId: 1,
   },
   {
     id: uniqid(),
     slug: "redesigning-our-logo",
     description: "What went into the new logo.",
-    imgUrl: "https://images.unsplash.com/photo-1495121553079-4c61bcce1894",
+    imgUrl: "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc",
+    imgAlt: "Pug in glasses",
     authorId: 2,
   },
 ]
@@ -56,6 +59,7 @@ const resolvers = {
         slug,
         description,
         imgUrl: "https://images.unsplash.com/photo-1534432586043-ead5b99229fb",
+        imgAlt: "pug in a sweater",
         authorId: 1,
       }
 
