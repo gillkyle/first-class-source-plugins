@@ -5,17 +5,14 @@
  */
 
 module.exports = {
+  /* Your site config here */
   plugins: [
-    // loads the source-plugin
     {
-      resolve: `source-plugin`,
+      resolve: require.resolve(`../source-plugin`),
       options: {
-        spaceId: "123",
-        preview: true,
-        cacheResponse: false,
+        previewMode: true,
       },
     },
-    // required to generate optimized images
     `gatsby-plugin-sharp`,
     `gatsby-transformer-sharp`,
   ],
